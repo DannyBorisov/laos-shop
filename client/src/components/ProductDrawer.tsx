@@ -12,14 +12,6 @@ type Product = {
   quantity: number;
 };
 
-type CartItem = {
-  productId: number;
-  quantity: number;
-  name: string;
-  price: number;
-  imageUrl: string | null;
-};
-
 type ProductDrawerProps = {
   product: Product | null;
   isOpen: boolean;

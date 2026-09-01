@@ -6,8 +6,8 @@
   "scripts": {
     "dev": "concurrently -n api,client -c blue,green \"tsx watch src/index.ts\" \"npm run dev --prefix client\"",
     "dev:api": "tsx watch src/index.ts",
-    "dev:client": "npm run dev --prefix client",
-    "build": "prisma generate && tsc && npm run build --prefix client",
+    "dev:client": "cd client && npm run dev",
+    "build": "prisma generate && tsc && cd client && npm run build ",
     "postinstall": "prisma generate",
     "start": "node dist/index.js",
     "db:generate": "prisma generate",

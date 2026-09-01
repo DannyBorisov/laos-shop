@@ -30,7 +30,7 @@ app.get("/{*path}", (_req, res) => {
 });
 
 // Start server (Cloud Run sets PORT env var)
-const port = process.env.PORT || config.env.PORT || 8080;
+const port = Number(process.env.PORT || config.env.PORT || 8080);
 app.listen(port, "0.0.0.0", () => {
   console.log(`Server running on port ${port}`);
 });

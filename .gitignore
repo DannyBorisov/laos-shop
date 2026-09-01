@@ -1,7 +1,9 @@
 node_modules
 # Keep environment variables out of version control
 .env
-
+.env.docker
+.env.production
 /generated/prisma
 .vercel
 gcp-credentials.json
+dist
