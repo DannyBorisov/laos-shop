@@ -2,7 +2,7 @@ import { Handler } from "express";
 import whatsapp from "../services/whatsapp";
 import config from "../config";
 
-const WhatsappTemplates = {
+export const WhatsappTemplates = {
   NEW_ORDER: {
     name: "new_order",
     languageCode: "lo",

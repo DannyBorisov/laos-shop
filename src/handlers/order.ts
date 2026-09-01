@@ -4,6 +4,7 @@ import { prisma } from "../data";
 import { Order, OrderStatus } from "@prisma/client";
 import whatsapp from "../services/whatsapp";
 import config from "../config";
+import { WhatsappTemplates } from "./whatsapp";
 
 interface OrderItem {
   productId: number;
@@ -63,7 +64,7 @@ export const getAllOrders: Handler = async (_req, res) => {
 
 export const createOrder: Handler = async (req, res) => {
   const { amount, items, phoneNumber, address } = req.body as GenerateQRRequest;
-  let order: Order | undefined = undefined;
+  let order: Order | null = null;
 
   try {
     order = await prisma.order.create({
@@ -87,8 +88,6 @@ export const createOrder: Handler = async (req, res) => {
       description: `Order #${order.id}`,
       tag1: "" + order.id,
     });
-
-    console.log(qrResponse);
 
     const qrCode = await prisma.qrCode.create({
       data: {
@@ -151,16 +150,12 @@ export const completeOrder: Handler = async (req, res) => {
       return res.status(404).json({ error: "Order not found" });
     }
 
-    // 2. Update order status based on payment status
     if (callback.status === PhajayPaymentStatus.PaymentCompleted) {
-      // Subtract stock for each item in the order
       await prisma.$transaction([
-        // Update order status
         prisma.order.update({
           where: { id: order.id },
           data: { status: OrderStatus.PAID },
         }),
-        // Decrement product quantities
         ...order.items.map((item) =>
           prisma.product.update({
             where: { id: item.productId },
@@ -177,8 +172,8 @@ export const completeOrder: Handler = async (req, res) => {
 
       whatsapp.sendTemplate({
         to: config.env.WHATSAPP_ORDER_FULFILLMENT_PHONE_NUMBER,
-        templateName: "new_order",
-        languageCode: "lo_LA",
+        templateName: WhatsappTemplates.NEW_ORDER.name,
+        languageCode: WhatsappTemplates.NEW_ORDER.languageCode,
         components: [
           {
             type: "body",

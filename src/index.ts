@@ -3,6 +3,7 @@ import cors from "cors";
 import path from "path";
 import routes from "./routes";
 import config from "./config";
+import { basicAuth } from "./middleware/basicAuth";
 
 const app = express();
 
@@ -23,6 +24,11 @@ app.get("/health", (_req, res) => {
 // Serve static files from client/dist
 const clientDistPath = path.join(__dirname, "../client/dist");
 app.use(express.static(clientDistPath));
+
+// Protect /admin route with basic auth
+app.get("/admin", basicAuth, (_req, res) => {
+  res.sendFile(path.join(clientDistPath, "index.html"));
+});
 
 // SPA fallback - serve index.html for all non-API routes
 app.get("/{*path}", (_req, res) => {

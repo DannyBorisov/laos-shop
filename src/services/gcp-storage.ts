@@ -25,11 +25,9 @@ export const uploadMedia = async (
 };
 
 export const getSignedUrl = async (filename: string): Promise<string> => {
-  const [url] = await bucket.file(filename).getSignedUrl({
-    action: "read",
-    expires: Date.now() + 60 * 60 * 1000, // 1 hour
-  });
-  return url;
+  // Use public URL since bucket is public
+  const bucketName = process.env.GCP_BUCKET_NAME || "";
+  return `https://storage.googleapis.com/${bucketName}/${filename}`;
 };
 
 export const deleteMedia = async (filename: string): Promise<void> => {

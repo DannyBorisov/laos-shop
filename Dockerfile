@@ -49,9 +49,9 @@ COPY --from=builder /app/dist ./dist
 # Copy built client
 COPY --from=builder /app/client/dist ./client/dist
 
-# Cloud Run uses PORT env variable (default 3010)
-ENV PORT=3010
-EXPOSE 3010
+# Cloud Run uses PORT env variable (default 8080)
+ENV PORT=8080
+EXPOSE 8080
 
 # Start server
 CMD ["node", "dist/index.js"]
