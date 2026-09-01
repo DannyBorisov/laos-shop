@@ -1,0 +1,111 @@
+{
+  "brand": {
+    "name": "Mhorkoung Beauty Center",
+    "tagline": "Professional Aesthetic Solutions"
+  },
+  "nav": {
+    "home": "Home",
+    "products": "Products",
+    "about": "About",
+    "contact": "Contact"
+  },
+  "hero": {
+    "title": "Premium Aesthetic Solutions",
+    "subtitle": "Medical-grade beauty products trusted by professionals across Laos",
+    "cta": "View Products"
+  },
+  "categories": {
+    "title": "Shop by Category",
+    "all": "All Products",
+    "noProducts": "No products found in this category",
+    "botox": "Botox",
+    "fillers": "Fillers",
+    "fatDissolving": "Fat Dissolving",
+    "skinBrightening": "Skin Brightening",
+    "threadLift": "Thread Lift",
+    "weightLoss": "Weight Loss"
+  },
+  "products": {
+    "title": "Our Products",
+    "loading": "Loading products...",
+    "outOfStock": "Out of Stock",
+    "addToCart": "Add to Cart",
+    "addedToCart": "Added to Cart",
+    "showing": "Showing",
+    "of": "of",
+    "productsText": "products",
+    "prev": "Prev",
+    "next": "Next",
+    "backToShop": "Back to Shop",
+    "quantity": "Quantity",
+    "inStock": "in stock",
+    "productId": "Product ID",
+    "freeShipping": "Free shipping on orders over 500,000 KIP",
+    "videoTitle": "How to Use",
+    "videoSubtitle": "Watch our guide to get the best results from this product",
+    "videoNotSupported": "Your browser does not support video playback."
+  },
+  "cart": {
+    "title": "Shopping Cart",
+    "empty": "Your cart is empty",
+    "emptyMessage": "Add some products before checking out.",
+    "continueShopping": "Continue Shopping",
+    "total": "Total",
+    "checkout": "Checkout"
+  },
+  "checkout": {
+    "title": "Checkout",
+    "subtitle": "Complete your order by filling in the details below",
+    "step1": "Details",
+    "step2": "Payment",
+    "secureCheckout": "Secure Checkout",
+    "back": "Back",
+    "contactInfo": "Contact Information",
+    "phone": "Phone Number",
+    "phonePlaceholder": "020 XXXX XXXX",
+    "phoneHint": "We'll contact you for delivery updates",
+    "deliveryAddress": "Delivery Address",
+    "city": "City/Province",
+    "cityPlaceholder": "e.g. Vientiane",
+    "district": "District",
+    "districtPlaceholder": "e.g. Sisattanak",
+    "village": "Village",
+    "villagePlaceholder": "e.g. Ban Phonsinuan",
+    "required": "*",
+    "continueToPayment": "Continue to Payment",
+    "processing": "Processing...",
+    "orderError": "Failed to process order. Please try again.",
+    "orderSummary": "Order Summary",
+    "items": "items",
+    "item": "item",
+    "subtotal": "Subtotal",
+    "shipping": "Shipping",
+    "free": "Free",
+    "each": "each"
+  },
+  "payment": {
+    "scanToPay": "Scan to Pay",
+    "useApp": "Use LDB Bank app to scan this QR code",
+    "amountDue": "Amount Due",
+    "transactionId": "Transaction ID",
+    "openInApp": "Open in LDB Bank App",
+    "backToShop": "Back to Shop"
+  },
+  "footer": {
+    "description": "Professional beauty products and treatments",
+    "quickLinks": "Quick Links",
+    "legal": "Legal",
+    "privacy": "Privacy Policy",
+    "terms": "Terms of Service",
+    "shippingPolicy": "Shipping Policy",
+    "returnPolicy": "Return Policy",
+    "followUs": "Follow Us",
+    "copyright": "© 2026 Mhorkoung Beauty Center. All rights reserved.",
+    "madeBy": "Made by Danny"
+  },
+  "common": {
+    "currency": "KIP",
+    "loading": "Loading...",
+    "notFound": "Product not found"
+  }
+}

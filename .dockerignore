@@ -1,0 +1,14 @@
+node_modules
+client/node_modules
+dist
+client/dist
+.git
+.gitignore
+.env
+.env.*
+*.md
+.vercel
+.claude
+.agents
+.windsurf
+gcp-credentials.json
