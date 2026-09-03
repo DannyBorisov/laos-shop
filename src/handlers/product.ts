@@ -42,6 +42,7 @@ export const getProducts = async (req: Request, res: Response) => {
       skip,
       take: +limit,
       orderBy: { id: "asc" },
+      include: { supplier: true },
     }),
     prisma.product.count({ where }),
   ]);
@@ -63,6 +64,7 @@ export const getProduct = async (req: Request, res: Response) => {
   const id = req.params.id as string;
   const dbProduct = await prisma.product.findUnique({
     where: { id: +id },
+    include: { supplier: true },
   });
   if (!dbProduct) {
     res.status(404).json({ error: "Product not found" });
@@ -73,9 +75,19 @@ export const getProduct = async (req: Request, res: Response) => {
 };
 
 export const createProduct = async (req: Request, res: Response) => {
-  const { name, price, description, imagePath, videoPath, quantity } = req.body;
+  const { name, price, description, imagePath, videoPath, quantity, supplierId } =
+    req.body;
   const dbProduct = await prisma.product.create({
-    data: { name, price, description, imagePath, videoPath, quantity },
+    data: {
+      name,
+      price,
+      description,
+      imagePath,
+      videoPath,
+      quantity,
+      supplierId: supplierId ?? null,
+    },
+    include: { supplier: true },
   });
   const product = await addMediaUrls(dbProduct);
   res.status(201).json(product);
@@ -83,10 +95,20 @@ export const createProduct = async (req: Request, res: Response) => {
 
 export const updateProduct = async (req: Request, res: Response) => {
   const id = req.params.id as string;
-  const { name, price, description, imagePath, videoPath, quantity } = req.body;
+  const { name, price, description, imagePath, videoPath, quantity, supplierId } =
+    req.body;
   const dbProduct = await prisma.product.update({
     where: { id: parseInt(id) },
-    data: { name, price, description, imagePath, videoPath, quantity },
+    data: {
+      name,
+      price,
+      description,
+      imagePath,
+      videoPath,
+      quantity,
+      ...(supplierId !== undefined && { supplierId: supplierId ?? null }),
+    },
+    include: { supplier: true },
   });
   const product = await addMediaUrls(dbProduct);
   res.json(product);

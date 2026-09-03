@@ -26,6 +26,17 @@ type Order = {
   items: OrderItem[];
 };
 
+type Supplier = {
+  id: number;
+  name: string;
+  phoneNumber: string;
+  country: string;
+  templateName: string;
+  languageCode: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
 type Product = {
   id: number;
   name: string;
@@ -36,15 +47,18 @@ type Product = {
   videoPath: string | null; // GCS filename for instruction video
   videoUrl: string | null; // Signed URL from backend
   quantity: number;
+  supplierId: number | null;
+  supplier: Supplier | null;
   updatedAt: string;
 };
 
-type Tab = "orders" | "products";
+type Tab = "orders" | "products" | "suppliers";
 
 export function Admin() {
   const [activeTab, setActiveTab] = useState<Tab>("orders");
   const [orders, setOrders] = useState<Order[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedOrder, setExpandedOrder] = useState<number | null>(null);
   const [editingProduct, setEditingProduct] = useState<number | null>(null);
@@ -58,6 +72,15 @@ export function Admin() {
     quantity: 0,
     imagePath: "",
     videoPath: "",
+    supplierId: "" as string,
+  });
+  const [showAddSupplier, setShowAddSupplier] = useState(false);
+  const [newSupplier, setNewSupplier] = useState({
+    name: "",
+    phoneNumber: "",
+    country: "",
+    templateName: "",
+    languageCode: "en_US",
   });
   const [selectedProducts, setSelectedProducts] = useState<Set<number>>(
     new Set(),
@@ -76,11 +99,22 @@ export function Admin() {
         .get<Order[]>("/orders")
         .then(setOrders)
         .finally(() => setLoading(false));
-    } else {
+    } else if (activeTab === "products") {
+      setLoading(true);
+      Promise.all([
+        api.get<{ products: Product[] }>("/products?limit=1000"),
+        api.get<Supplier[]>("/suppliers"),
+      ])
+        .then(([data, sup]) => {
+          setProducts(data.products);
+          setSuppliers(sup);
+        })
+        .finally(() => setLoading(false));
+    } else if (activeTab === "suppliers") {
       setLoading(true);
       api
-        .get<{ products: Product[] }>("/products?limit=1000")
-        .then((data) => setProducts(data.products))
+        .get<Supplier[]>("/suppliers")
+        .then(setSuppliers)
         .finally(() => setLoading(false));
     }
   }, [activeTab]);
@@ -114,6 +148,7 @@ export function Admin() {
       quantity: product.quantity,
       description: product.description || "",
       videoPath: product.videoPath || "",
+      supplierId: product.supplierId,
     });
   };
 
@@ -165,6 +200,9 @@ export function Admin() {
         imagePath: newProduct.imagePath || null,
         videoPath: newProduct.videoPath || null,
         description: newProduct.description || null,
+        supplierId: newProduct.supplierId
+          ? Number(newProduct.supplierId)
+          : null,
       });
       setProducts((prev) => [created, ...prev]);
       setShowAddProduct(false);
@@ -175,10 +213,42 @@ export function Admin() {
         quantity: 0,
         imagePath: "",
         videoPath: "",
+        supplierId: "",
       });
     } catch (error) {
       console.error("Failed to create product:", error);
       alert("Failed to create product");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const createSupplier = async () => {
+    if (
+      !newSupplier.name ||
+      !newSupplier.phoneNumber ||
+      !newSupplier.country ||
+      !newSupplier.templateName ||
+      !newSupplier.languageCode
+    ) {
+      alert("Please fill in all supplier fields");
+      return;
+    }
+    setSaving(true);
+    try {
+      const created = await api.post<Supplier>("/suppliers", newSupplier);
+      setSuppliers((prev) => [...prev, created]);
+      setShowAddSupplier(false);
+      setNewSupplier({
+        name: "",
+        phoneNumber: "",
+        country: "",
+        templateName: "",
+        languageCode: "en_US",
+      });
+    } catch (error) {
+      console.error("Failed to create supplier:", error);
+      alert("Failed to create supplier");
     } finally {
       setSaving(false);
     }
@@ -341,6 +411,23 @@ export function Admin() {
             <path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
           </svg>
           Products
+        </button>
+        <button
+          className={`tab ${activeTab === "suppliers" ? "active" : ""}`}
+          onClick={() => {
+            setActiveTab("suppliers");
+            clearSelection();
+          }}
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <path d="M3 9l1-5h16l1 5M4 9v11a1 1 0 001 1h14a1 1 0 001-1V9M9 21v-6h6v6" />
+          </svg>
+          Suppliers
         </button>
       </div>
 
@@ -588,6 +675,25 @@ export function Admin() {
                       placeholder="GCS filename (or upload after creating)"
                     />
                   </div>
+                  <div className="form-group">
+                    <label>Supplier</label>
+                    <select
+                      value={newProduct.supplierId}
+                      onChange={(e) =>
+                        setNewProduct((p) => ({
+                          ...p,
+                          supplierId: e.target.value,
+                        }))
+                      }
+                    >
+                      <option value="">None</option>
+                      {suppliers.map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                   <div className="form-group full-width">
                     <label>Description</label>
                     <textarea
@@ -718,6 +824,7 @@ export function Admin() {
                       <th>Video</th>
                       <th>Name</th>
                       <th>Description</th>
+                      <th>Supplier</th>
                       <th>Price (KIP)</th>
                       <th>Stock</th>
                       <th>Updated</th>
@@ -922,6 +1029,31 @@ export function Admin() {
                             </span>
                           )}
                         </td>
+                        <td className="product-supplier-cell">
+                          {editingProduct === product.id ? (
+                            <select
+                              value={editValues.supplierId ?? ""}
+                              onChange={(e) =>
+                                setEditValues((prev) => ({
+                                  ...prev,
+                                  supplierId: e.target.value
+                                    ? Number(e.target.value)
+                                    : null,
+                                }))
+                              }
+                              className="edit-input"
+                            >
+                              <option value="">-</option>
+                              {suppliers.map((s) => (
+                                <option key={s.id} value={s.id}>
+                                  {s.name}
+                                </option>
+                              ))}
+                            </select>
+                          ) : (
+                            product.supplier?.name || "-"
+                          )}
+                        </td>
                         <td className="product-price-cell">
                           {editingProduct === product.id ? (
                             <input
@@ -1015,6 +1147,166 @@ export function Admin() {
                               </button>
                             </div>
                           )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </>
+        )}
+
+        {activeTab === "suppliers" && (
+          <>
+            <div className="admin-title">
+              <h1>Suppliers</h1>
+              <span className="order-count">{suppliers.length} total</span>
+              <button
+                className="btn-add-product"
+                onClick={() => setShowAddSupplier(true)}
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <path d="M12 5v14M5 12h14" />
+                </svg>
+                Add Supplier
+              </button>
+            </div>
+
+            {showAddSupplier && (
+              <div className="add-product-form">
+                <h3>Add New Supplier</h3>
+                <div className="form-grid">
+                  <div className="form-group">
+                    <label>Name *</label>
+                    <input
+                      type="text"
+                      value={newSupplier.name}
+                      onChange={(e) =>
+                        setNewSupplier((s) => ({ ...s, name: e.target.value }))
+                      }
+                      placeholder="Supplier name"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Phone Number *</label>
+                    <input
+                      type="text"
+                      value={newSupplier.phoneNumber}
+                      onChange={(e) =>
+                        setNewSupplier((s) => ({
+                          ...s,
+                          phoneNumber: e.target.value,
+                        }))
+                      }
+                      placeholder="+856..."
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Country *</label>
+                    <input
+                      type="text"
+                      value={newSupplier.country}
+                      onChange={(e) =>
+                        setNewSupplier((s) => ({
+                          ...s,
+                          country: e.target.value,
+                        }))
+                      }
+                      placeholder="Laos"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Template Name / ID *</label>
+                    <input
+                      type="text"
+                      value={newSupplier.templateName}
+                      onChange={(e) =>
+                        setNewSupplier((s) => ({
+                          ...s,
+                          templateName: e.target.value,
+                        }))
+                      }
+                      placeholder="WhatsApp template name"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Template Language Code *</label>
+                    <input
+                      type="text"
+                      value={newSupplier.languageCode}
+                      onChange={(e) =>
+                        setNewSupplier((s) => ({
+                          ...s,
+                          languageCode: e.target.value,
+                        }))
+                      }
+                      placeholder="en_US"
+                    />
+                  </div>
+                </div>
+                <div className="form-actions">
+                  <button
+                    className="btn-save"
+                    onClick={createSupplier}
+                    disabled={saving}
+                  >
+                    {saving ? "Creating..." : "Create Supplier"}
+                  </button>
+                  <button
+                    className="btn-cancel"
+                    onClick={() => setShowAddSupplier(false)}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {loading ? (
+              <div className="loading">Loading suppliers...</div>
+            ) : suppliers.length === 0 ? (
+              <div className="empty-state">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <path d="M3 9l1-5h16l1 5M4 9v11a1 1 0 001 1h14a1 1 0 001-1V9M9 21v-6h6v6" />
+                </svg>
+                <p>No suppliers yet</p>
+              </div>
+            ) : (
+              <div className="orders-table-wrapper">
+                <table className="orders-table">
+                  <thead>
+                    <tr>
+                      <th>ID</th>
+                      <th>Name</th>
+                      <th>Phone Number</th>
+                      <th>Country</th>
+                      <th>Template</th>
+                      <th>Language</th>
+                      <th>Created</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {suppliers.map((supplier) => (
+                      <tr key={supplier.id}>
+                        <td className="order-id">#{supplier.id}</td>
+                        <td>{supplier.name}</td>
+                        <td>{supplier.phoneNumber}</td>
+                        <td>{supplier.country}</td>
+                        <td>{supplier.templateName}</td>
+                        <td>{supplier.languageCode}</td>
+                        <td className="order-date">
+                          {formatDate(supplier.createdAt)}
                         </td>
                       </tr>
                     ))}

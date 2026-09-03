@@ -14,7 +14,8 @@
     "db:migrate": "prisma migrate dev",
     "db:push": "prisma db push",
     "db:seed": "tsx src/seed.ts",
-    "migrate:media": "tsx src/migrate-media.ts"
+    "migrate:media": "tsx src/migrate-media.ts",
+    "dev:docker": "docker-compose up --build"
   },
   "keywords": [],
   "author": "",

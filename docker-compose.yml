@@ -1,0 +1,89 @@
+# Local development stack: Postgres + backend (tsx watch) + frontend (vite).
+#
+#   docker compose up --build
+#
+# Frontend:  http://localhost:5175
+# Backend:   http://localhost:3010
+# Postgres:  localhost:5432  (postgres / postgres / laosshop)
+#
+# The db schema + seed data come from scripts/db/init.sql, which postgres runs
+# automatically the first time the volume is created. To re-seed after schema
+# changes: docker compose down -v && docker compose up
+
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: laosshop
+    ports:
+      - "5432:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      - ./scripts/db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d laosshop"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    command: npm run dev:api
+    environment:
+      NODE_ENV: development
+      PORT: "3010"
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/laosshop
+      # Placeholder values so config.ts (zod) validation passes locally.
+      PHAJAY_SECRET: dev
+      WHATSAPP_API_KEY: dev
+      WHATSAPP_PHONE_ID: dev
+      WHATSAPP_ORDER_FULFILLMENT_PHONE_NUMBER: dev
+      WHATSAPP_WEBHOOK_VERIFY_TOKEN: dev
+      ADMIN_USERNAME: admin
+      ADMIN_PASSWORD: admin
+      GCP_BUCKET_NAME: laos-shop-media
+      GCP_CREDENTIALS_PATH: ./gcp-credentials.json
+    ports:
+      - "3010:3010"
+    volumes:
+      - ./src:/app/src
+      - ./prisma:/app/prisma
+      - ./tsconfig.json:/app/tsconfig.json
+      - ./prisma.config.ts:/app/prisma.config.ts
+      # Keep container's node_modules (don't shadow with host's).
+      - /app/node_modules
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    command: npm run dev --prefix client -- --host --port 5175
+    environment:
+      # Client calls the backend directly (browser -> host-published backend port).
+      # Avoids relying on the Vite dev proxy through Docker Desktop's port forwarder.
+      VITE_API_URL: http://localhost:3010/api
+      VITE_PROXY_TARGET: http://backend:3010
+    ports:
+      - "5175:5175"
+    volumes:
+      - ./client/src:/app/client/src
+      - ./client/public:/app/client/public
+      - ./client/index.html:/app/client/index.html
+      - ./client/vite.config.ts:/app/client/vite.config.ts
+      - ./client/tsconfig.json:/app/client/tsconfig.json
+      - ./client/tsconfig.app.json:/app/client/tsconfig.app.json
+      - ./client/tsconfig.node.json:/app/client/tsconfig.node.json
+      - /app/node_modules
+      - /app/client/node_modules
+    depends_on:
+      - backend
+
+volumes:
+  db-data:
