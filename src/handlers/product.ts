@@ -9,7 +9,11 @@ type ProductWithPaths = {
 };
 
 const addMediaUrls = async (product: ProductWithPaths) => {
-  const result = { ...product, imageUrl: null as string | null, videoUrl: null as string | null };
+  const result = {
+    ...product,
+    imageUrl: null as string | null,
+    videoUrl: null as string | null,
+  };
 
   if (product.imagePath) {
     try {
@@ -75,20 +79,32 @@ export const getProduct = async (req: Request, res: Response) => {
 };
 
 export const createProduct = async (req: Request, res: Response) => {
-  const { name, price, description, imagePath, videoPath, quantity, supplierId } =
-    req.body;
-  if (supplierId == null) {
-    res.status(400).json({ error: "supplierId is required" });
+  const {
+    name,
+    price,
+    description,
+    imagePath,
+    videoPath,
+    quantity,
+    supplierId,
+  } = req.body;
+
+  const supplier = await prisma.supplier.findUnique({
+    where: { id: supplierId },
+  });
+  if (!supplier) {
+    res.status(400).json({ error: `supplier ${supplierId} does not exist` });
     return;
   }
+
   const dbProduct = await prisma.product.create({
     data: {
-      name,
+      name: name.trim(),
       price,
-      description,
-      imagePath,
-      videoPath,
-      quantity,
+      description: description ?? null,
+      imagePath: imagePath?.trim(),
+      videoPath: videoPath ?? null,
+      quantity: quantity ?? 0,
       supplierId,
     },
     include: { supplier: true },
@@ -99,8 +115,15 @@ export const createProduct = async (req: Request, res: Response) => {
 
 export const updateProduct = async (req: Request, res: Response) => {
   const id = req.params.id as string;
-  const { name, price, description, imagePath, videoPath, quantity, supplierId } =
-    req.body;
+  const {
+    name,
+    price,
+    description,
+    imagePath,
+    videoPath,
+    quantity,
+    supplierId,
+  } = req.body;
   if (supplierId === null) {
     res.status(400).json({ error: "supplierId cannot be null" });
     return;

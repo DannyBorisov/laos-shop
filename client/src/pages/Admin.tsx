@@ -191,10 +191,19 @@ export function Admin() {
   };
 
   const createProduct = async () => {
-    if (!newProduct.name || newProduct.price <= 0) {
-      alert("Please fill in name and price");
+    if (!newProduct.name.trim()) {
+      alert("Name is required");
       return;
     }
+    if (newProduct.price <= 0) {
+      alert("Price must be greater than 0");
+      return;
+    }
+    if (!newProduct.supplierId) {
+      alert("Supplier is required");
+      return;
+    }
+
     setSaving(true);
     try {
       const created = await api.post<Product>("/products", {
@@ -676,7 +685,7 @@ export function Admin() {
                     />
                   </div>
                   <div className="form-group">
-                    <label>Image</label>
+                    <label>Image *</label>
                     <input
                       type="file"
                       accept="image/*"
@@ -708,7 +717,7 @@ export function Admin() {
                     )}
                   </div>
                   <div className="form-group">
-                    <label>Supplier</label>
+                    <label>Supplier *</label>
                     <select
                       value={newProduct.supplierId}
                       onChange={(e) =>
@@ -718,7 +727,7 @@ export function Admin() {
                         }))
                       }
                     >
-                      <option value="">None</option>
+                      <option value="">Select a supplier…</option>
                       {suppliers.map((s) => (
                         <option key={s.id} value={s.id}>
                           {s.name}
@@ -1100,7 +1109,7 @@ export function Admin() {
                               className="edit-input edit-input-number"
                             />
                           ) : (
-                            product.price.toLocaleString()
+                            product.price?.toLocaleString()
                           )}
                         </td>
                         <td className="product-stock-cell">
