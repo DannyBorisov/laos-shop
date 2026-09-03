@@ -20,6 +20,7 @@ CREATE TABLE "Supplier" (
   "phoneNumber"  TEXT NOT NULL,
   "country"      TEXT NOT NULL,
   "templateName" TEXT NOT NULL,
+  "languageCode" TEXT NOT NULL DEFAULT 'en_US',
   "createdAt"    TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
   "updatedAt"    TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -33,7 +34,7 @@ CREATE TABLE "Product" (
   "videoPath"   TEXT,
   "quantity"    INTEGER NOT NULL DEFAULT 0,
   "categoryId"  INTEGER REFERENCES "Category"("id"),
-  "supplierId"  INTEGER REFERENCES "Supplier"("id") ON DELETE SET NULL,
+  "supplierId"  INTEGER NOT NULL REFERENCES "Supplier"("id"),
   "createdAt"   TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
   "updatedAt"   TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

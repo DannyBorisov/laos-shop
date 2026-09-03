@@ -74,6 +74,8 @@ export function Admin() {
     videoPath: "",
     supplierId: "" as string,
   });
+  const [uploadingNewImage, setUploadingNewImage] = useState(false);
+  const [uploadingNewVideo, setUploadingNewVideo] = useState(false);
   const [showAddSupplier, setShowAddSupplier] = useState(false);
   const [newSupplier, setNewSupplier] = useState({
     name: "",
@@ -220,6 +222,32 @@ export function Admin() {
       alert("Failed to create product");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleNewImageUpload = async (file: File) => {
+    setUploadingNewImage(true);
+    try {
+      const { filename } = await api.uploadImage(file);
+      setNewProduct((p) => ({ ...p, imagePath: filename }));
+    } catch (error) {
+      console.error("Failed to upload image:", error);
+      alert("Failed to upload image");
+    } finally {
+      setUploadingNewImage(false);
+    }
+  };
+
+  const handleNewVideoUpload = async (file: File) => {
+    setUploadingNewVideo(true);
+    try {
+      const { filename } = await api.uploadVideo(file);
+      setNewProduct((p) => ({ ...p, videoPath: filename }));
+    } catch (error) {
+      console.error("Failed to upload video:", error);
+      alert("Failed to upload video");
+    } finally {
+      setUploadingNewVideo(false);
     }
   };
 
@@ -648,32 +676,36 @@ export function Admin() {
                     />
                   </div>
                   <div className="form-group">
-                    <label>Image Path</label>
+                    <label>Image</label>
                     <input
-                      type="text"
-                      value={newProduct.imagePath}
-                      onChange={(e) =>
-                        setNewProduct((p) => ({
-                          ...p,
-                          imagePath: e.target.value,
-                        }))
-                      }
-                      placeholder="GCS filename (e.g., images/product-123.jpg)"
+                      type="file"
+                      accept="image/*"
+                      disabled={uploadingNewImage}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleNewImageUpload(file);
+                      }}
                     />
+                    {uploadingNewImage && <small>Uploading…</small>}
+                    {newProduct.imagePath && !uploadingNewImage && (
+                      <small>Uploaded: {newProduct.imagePath}</small>
+                    )}
                   </div>
                   <div className="form-group">
-                    <label>Video Path</label>
+                    <label>Video</label>
                     <input
-                      type="text"
-                      value={newProduct.videoPath}
-                      onChange={(e) =>
-                        setNewProduct((p) => ({
-                          ...p,
-                          videoPath: e.target.value,
-                        }))
-                      }
-                      placeholder="GCS filename (or upload after creating)"
+                      type="file"
+                      accept="video/*"
+                      disabled={uploadingNewVideo}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleNewVideoUpload(file);
+                      }}
                     />
+                    {uploadingNewVideo && <small>Uploading…</small>}
+                    {newProduct.videoPath && !uploadingNewVideo && (
+                      <small>Uploaded: {newProduct.videoPath}</small>
+                    )}
                   </div>
                   <div className="form-group">
                     <label>Supplier</label>
@@ -713,7 +745,7 @@ export function Admin() {
                   <button
                     className="btn-save"
                     onClick={createProduct}
-                    disabled={saving}
+                    disabled={saving || uploadingNewImage || uploadingNewVideo}
                   >
                     {saving ? "Creating..." : "Create Product"}
                   </button>

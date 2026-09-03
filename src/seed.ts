@@ -10,6 +10,18 @@ const seed = async () => {
   const csv = readFileSync("product - Sheet1.csv", "utf-8");
   const lines = csv.split("\n").slice(1); // skip header
 
+  // Products need a supplier; use a placeholder for seeded data.
+  const supplier = await prisma.supplier.upsert({
+    where: { id: 1 },
+    update: {},
+    create: {
+      name: "Unknown",
+      phoneNumber: "-",
+      country: "-",
+      templateName: "-",
+    },
+  });
+
   const products = lines
     .filter((line) => line.trim())
     .map((line) => {
@@ -20,6 +32,7 @@ const seed = async () => {
         description: description?.trim() || null,
         imagePath: imagePath?.trim() || null,
         quantity: 0,
+        supplierId: supplier.id,
       };
     });
 

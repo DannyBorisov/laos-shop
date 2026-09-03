@@ -13,7 +13,7 @@ CREATE TABLE "Supplier" (
 );
 
 -- AlterTable
-ALTER TABLE "Product" ADD COLUMN "supplierId" INTEGER;
+ALTER TABLE "Product" ADD COLUMN "supplierId" INTEGER NOT NULL;
 
 -- AddForeignKey
-ALTER TABLE "Product" ADD CONSTRAINT "Product_supplierId_fkey" FOREIGN KEY ("supplierId") REFERENCES "Supplier"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "Product" ADD CONSTRAINT "Product_supplierId_fkey" FOREIGN KEY ("supplierId") REFERENCES "Supplier"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

@@ -77,6 +77,10 @@ export const getProduct = async (req: Request, res: Response) => {
 export const createProduct = async (req: Request, res: Response) => {
   const { name, price, description, imagePath, videoPath, quantity, supplierId } =
     req.body;
+  if (supplierId == null) {
+    res.status(400).json({ error: "supplierId is required" });
+    return;
+  }
   const dbProduct = await prisma.product.create({
     data: {
       name,
@@ -85,7 +89,7 @@ export const createProduct = async (req: Request, res: Response) => {
       imagePath,
       videoPath,
       quantity,
-      supplierId: supplierId ?? null,
+      supplierId,
     },
     include: { supplier: true },
   });
@@ -97,6 +101,10 @@ export const updateProduct = async (req: Request, res: Response) => {
   const id = req.params.id as string;
   const { name, price, description, imagePath, videoPath, quantity, supplierId } =
     req.body;
+  if (supplierId === null) {
+    res.status(400).json({ error: "supplierId cannot be null" });
+    return;
+  }
   const dbProduct = await prisma.product.update({
     where: { id: parseInt(id) },
     data: {
@@ -106,7 +114,7 @@ export const updateProduct = async (req: Request, res: Response) => {
       imagePath,
       videoPath,
       quantity,
-      ...(supplierId !== undefined && { supplierId: supplierId ?? null }),
+      ...(supplierId !== undefined && { supplierId }),
     },
     include: { supplier: true },
   });
