@@ -15,7 +15,6 @@ const EnvSchema = z.object({
   PHAJAY_SECRET: z.string(),
   WHATSAPP_API_KEY: z.string(),
   WHATSAPP_PHONE_ID: z.string(),
-  WHATSAPP_ORDER_FULFILLMENT_PHONE_NUMBER: z.string(),
   WHATSAPP_WEBHOOK_VERIFY_TOKEN: z.string(),
   ADMIN_USERNAME: z.string().default("admin"),
   ADMIN_PASSWORD: z.string(),
