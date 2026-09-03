@@ -5,9 +5,13 @@ import { defineConfig } from 'vite'
 export default defineConfig({
   plugins: [react()],
   server: {
+    host: true,
+    // Vite 8 blocks unknown hosts by default; loosen for LAN/Docker dev.
+    allowedHosts: true,
     proxy: {
       '/api': {
-        target: 'http://localhost:3010',
+        // Override with VITE_PROXY_TARGET (e.g. http://backend:3010) when running in Docker.
+        target: process.env.VITE_PROXY_TARGET || 'http://localhost:3010',
         changeOrigin: true,
       },
     },

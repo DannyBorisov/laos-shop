@@ -91,7 +91,7 @@ export const sendTestMessage: Handler = async (req, res) => {
 
   const order = {
     id: "12345",
-    phoneNumber: "8562078912805",
+    phoneNumber: "972545290475",
     address: "Vientiane, Laos",
   };
 

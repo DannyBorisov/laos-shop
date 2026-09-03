@@ -24,10 +24,15 @@ export const uploadMedia = async (
   return filename;
 };
 
+const SIGNED_URL_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+
 export const getSignedUrl = async (filename: string): Promise<string> => {
-  // Use public URL since bucket is public
-  const bucketName = process.env.GCP_BUCKET_NAME || "";
-  return `https://storage.googleapis.com/${bucketName}/${filename}`;
+  const [url] = await bucket.file(filename).getSignedUrl({
+    version: "v4",
+    action: "read",
+    expires: Date.now() + SIGNED_URL_TTL_MS,
+  });
+  return url;
 };
 
 export const deleteMedia = async (filename: string): Promise<void> => {

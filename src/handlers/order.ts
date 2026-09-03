@@ -1,10 +1,8 @@
 import { Handler } from "express";
 import phajay, { PhajayPaymentStatus } from "../services/payjay";
 import { prisma } from "../data";
-import { Order, OrderStatus } from "@prisma/client";
+import { Order, OrderStatus, Supplier } from "@prisma/client";
 import whatsapp from "../services/whatsapp";
-import config from "../config";
-import { WhatsappTemplates } from "./whatsapp";
 
 interface OrderItem {
   productId: number;
@@ -49,7 +47,7 @@ export const getAllOrders: Handler = async (_req, res) => {
       include: {
         items: {
           include: {
-            product: true,
+            product: { include: { supplier: true } },
           },
         },
       },
@@ -142,7 +140,9 @@ export const completeOrder: Handler = async (req, res) => {
 
     const order = await prisma.order.findUnique({
       where: { id: +orderId },
-      include: { items: { include: { product: true } } },
+      include: {
+        items: { include: { product: { include: { supplier: true } } } },
+      },
     });
 
     if (!order) {
@@ -167,26 +167,60 @@ export const completeOrder: Handler = async (req, res) => {
       console.log("Order marked as PAID and stock updated:", order.id);
 
       const itemsList = order.items
-        .map((item) => `- ${item.product.name} x${item.quantity}`)
+        .map((item) => `- ${item.product.name} x${item.quantity} `)
         .join("\n");
 
-      whatsapp.sendTemplate({
-        to: config.env.WHATSAPP_ORDER_FULFILLMENT_PHONE_NUMBER,
-        templateName: WhatsappTemplates.NEW_ORDER.name,
-        languageCode: WhatsappTemplates.NEW_ORDER.languageCode,
-        components: [
-          {
-            type: "body",
-            parameters: [
-              { type: "text", text: `${order.id}` },
-              { type: "text", text: `${order.phoneNumber}` },
-              { type: "text", text: `${order.address}` },
-              { type: "text", text: `${itemsList}` },
-            ],
-          },
-        ],
-      });
+      const ordersBySupplier = order.items.reduce(
+        (acc, item) => {
+          const supplier = item.product.supplier;
+          if (!acc[supplier.id]) {
+            acc[supplier.id] = { supplier, items: [] };
+          }
+          acc[supplier.id].items.push(item);
+          return acc;
+        },
+        {} as Record<
+          number,
+          { supplier: Supplier; items: (typeof order.items)[number][] }
+        >,
+      );
+
+      const whatsappPromises = [];
+      for (const { supplier, items } of Object.values(ordersBySupplier)) {
+        const supplierItemsList = items
+          .map((item) => `- ${item.product.name} x${item.quantity}`)
+          .join("\n");
+
+        whatsappPromises.push(
+          whatsapp
+            .sendTemplate({
+              to: supplier.phoneNumber,
+              templateName: supplier.templateName,
+              languageCode: supplier.languageCode,
+              components: [
+                {
+                  type: "body",
+                  parameters: [
+                    { type: "text", text: `${order.id}` },
+                    { type: "text", text: `${order.phoneNumber}` },
+                    { type: "text", text: `${order.address}` },
+                    { type: "text", text: `${supplierItemsList}` },
+                  ],
+                },
+              ],
+            })
+            .catch((error) => {
+              console.error(
+                `Failed to notify supplier ${supplier.id} (${supplier.name}) for order ${order.id}:`,
+                error,
+              );
+            }),
+        );
+      }
+
+      await Promise.all(whatsappPromises);
     } else {
+      console.error("Payment failed for order:", order.id);
       await prisma.order.update({
         where: { id: order.id },
         data: { status: OrderStatus.FAILED },
