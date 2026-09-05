@@ -23,6 +23,11 @@ services:
     command: npm run dev:api
     env_file:
       - .env
+    environment:
+      # Override .env's DATABASE_URL (localhost, for running outside Docker)
+      # so the containerized backend reaches the `db` service by its
+      # compose network hostname instead.
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/laosshop
     ports:
       - "3010:3010"
     volumes:
