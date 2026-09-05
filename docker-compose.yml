@@ -45,6 +45,7 @@ services:
     command: npm run dev --prefix client -- --host --port 5175
     env_file:
       - .env
+      - client/.env
     ports:
       - "5175:5175"
     volumes:

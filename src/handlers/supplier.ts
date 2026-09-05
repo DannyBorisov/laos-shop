@@ -52,3 +52,22 @@ export const createSupplier: Handler = async (req, res) => {
 
   res.status(201).json(supplier);
 };
+
+export const updateSupplier: Handler = async (req, res) => {
+  const id = req.params.id as string;
+  const { name, phoneNumber, country, templateName, languageCode } =
+    req.body as Partial<CreateSupplierRequest>;
+
+  const supplier = await prisma.supplier.update({
+    where: { id: +id },
+    data: {
+      name,
+      phoneNumber,
+      country,
+      templateName,
+      languageCode,
+    },
+  });
+
+  res.json(supplier);
+};

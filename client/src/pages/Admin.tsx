@@ -93,6 +93,10 @@ export function Admin() {
   const [bulkMode, setBulkMode] = useState<"set" | "add" | "subtract">("set");
   const [uploadingVideo, setUploadingVideo] = useState<number | null>(null);
   const [uploadingImage, setUploadingImage] = useState<number | null>(null);
+  const [editingSupplier, setEditingSupplier] = useState<number | null>(null);
+  const [supplierEditValues, setSupplierEditValues] = useState<
+    Partial<Supplier>
+  >({});
 
   useEffect(() => {
     if (activeTab === "orders") {
@@ -286,6 +290,42 @@ export function Admin() {
     } catch (error) {
       console.error("Failed to create supplier:", error);
       alert("Failed to create supplier");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const startEditingSupplier = (supplier: Supplier) => {
+    setEditingSupplier(supplier.id);
+    setSupplierEditValues({
+      name: supplier.name,
+      phoneNumber: supplier.phoneNumber,
+      country: supplier.country,
+      templateName: supplier.templateName,
+      languageCode: supplier.languageCode,
+    });
+  };
+
+  const cancelEditingSupplier = () => {
+    setEditingSupplier(null);
+    setSupplierEditValues({});
+  };
+
+  const saveSupplier = async (supplierId: number) => {
+    setSaving(true);
+    try {
+      const updated = await api.put<Supplier>(
+        `/suppliers/${supplierId}`,
+        supplierEditValues,
+      );
+      setSuppliers((prev) =>
+        prev.map((s) => (s.id === supplierId ? { ...s, ...updated } : s)),
+      );
+      setEditingSupplier(null);
+      setSupplierEditValues({});
+    } catch (error) {
+      console.error("Failed to update supplier:", error);
+      alert("Failed to update supplier");
     } finally {
       setSaving(false);
     }
@@ -1335,19 +1375,136 @@ export function Admin() {
                       <th>Template</th>
                       <th>Language</th>
                       <th>Created</th>
+                      <th>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {suppliers.map((supplier) => (
                       <tr key={supplier.id}>
                         <td className="order-id">#{supplier.id}</td>
-                        <td>{supplier.name}</td>
-                        <td>{supplier.phoneNumber}</td>
-                        <td>{supplier.country}</td>
-                        <td>{supplier.templateName}</td>
-                        <td>{supplier.languageCode}</td>
+                        <td>
+                          {editingSupplier === supplier.id ? (
+                            <input
+                              type="text"
+                              value={supplierEditValues.name ?? ""}
+                              onChange={(e) =>
+                                setSupplierEditValues((prev) => ({
+                                  ...prev,
+                                  name: e.target.value,
+                                }))
+                              }
+                              className="edit-input"
+                            />
+                          ) : (
+                            supplier.name
+                          )}
+                        </td>
+                        <td>
+                          {editingSupplier === supplier.id ? (
+                            <input
+                              type="text"
+                              value={supplierEditValues.phoneNumber ?? ""}
+                              onChange={(e) =>
+                                setSupplierEditValues((prev) => ({
+                                  ...prev,
+                                  phoneNumber: e.target.value,
+                                }))
+                              }
+                              className="edit-input"
+                            />
+                          ) : (
+                            supplier.phoneNumber
+                          )}
+                        </td>
+                        <td>
+                          {editingSupplier === supplier.id ? (
+                            <input
+                              type="text"
+                              value={supplierEditValues.country ?? ""}
+                              onChange={(e) =>
+                                setSupplierEditValues((prev) => ({
+                                  ...prev,
+                                  country: e.target.value,
+                                }))
+                              }
+                              className="edit-input"
+                            />
+                          ) : (
+                            supplier.country
+                          )}
+                        </td>
+                        <td>
+                          {editingSupplier === supplier.id ? (
+                            <input
+                              type="text"
+                              value={supplierEditValues.templateName ?? ""}
+                              onChange={(e) =>
+                                setSupplierEditValues((prev) => ({
+                                  ...prev,
+                                  templateName: e.target.value,
+                                }))
+                              }
+                              className="edit-input"
+                            />
+                          ) : (
+                            supplier.templateName
+                          )}
+                        </td>
+                        <td>
+                          {editingSupplier === supplier.id ? (
+                            <input
+                              type="text"
+                              value={supplierEditValues.languageCode ?? ""}
+                              onChange={(e) =>
+                                setSupplierEditValues((prev) => ({
+                                  ...prev,
+                                  languageCode: e.target.value,
+                                }))
+                              }
+                              className="edit-input"
+                            />
+                          ) : (
+                            supplier.languageCode
+                          )}
+                        </td>
                         <td className="order-date">
                           {formatDate(supplier.createdAt)}
+                        </td>
+                        <td className="product-actions-cell">
+                          {editingSupplier === supplier.id ? (
+                            <div className="action-buttons">
+                              <button
+                                className="btn-save"
+                                onClick={() => saveSupplier(supplier.id)}
+                                disabled={saving}
+                              >
+                                {saving ? "..." : "Save"}
+                              </button>
+                              <button
+                                className="btn-cancel"
+                                onClick={cancelEditingSupplier}
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="action-buttons">
+                              <button
+                                className="btn-edit"
+                                onClick={() => startEditingSupplier(supplier)}
+                              >
+                                <svg
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                >
+                                  <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
+                                  <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
+                                </svg>
+                              </button>
+                            </div>
+                          )}
                         </td>
                       </tr>
                     ))}
