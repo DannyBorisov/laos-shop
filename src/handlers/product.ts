@@ -97,6 +97,16 @@ export const createProduct = async (req: Request, res: Response) => {
     return;
   }
 
+  if (!name) {
+    res.status(400).json({ error: "Name is required" });
+    return;
+  }
+
+  if (typeof price !== "number") {
+    res.status(400).json({ error: "Price must be a number" });
+    return;
+  }
+
   const dbProduct = await prisma.product.create({
     data: {
       name: name.trim(),

@@ -51,7 +51,10 @@
     "emptyMessage": "ກະລຸນາເພີ່ມສິນຄ້າກ່ອນຊຳລະເງິນ",
     "continueShopping": "ຊື້ສິນຄ້າຕໍ່",
     "total": "ລວມ",
-    "checkout": "ຊຳລະເງິນ"
+    "checkout": "ຊຳລະເງິນ",
+    "remove": "ລຶບສິນຄ້າ",
+    "increase": "ເພີ່ມຈຳນວນ",
+    "decrease": "ຫຼຸດຈຳນວນ"
   },
   "checkout": {
     "title": "ຊຳລະເງິນ",

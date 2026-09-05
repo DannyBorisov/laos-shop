@@ -30,8 +30,42 @@ export function Checkout() {
     const newLang = i18n.language === "lo" ? "en" : "lo";
     i18n.changeLanguage(newLang);
   };
-  const { items = [], total = 0 } =
-    (location.state as { items: CartItem[]; total: number }) || {};
+  const initial =
+    (location.state as { items: CartItem[]; total: number }) || {
+      items: [],
+      total: 0,
+    };
+
+  const [items, setItems] = useState<CartItem[]>(initial.items ?? []);
+
+  const total = items.reduce(
+    (sum, item) => sum + item.price * item.quantity,
+    0,
+  );
+
+  const syncCart = (next: CartItem[]) => {
+    localStorage.setItem("cart", JSON.stringify(next));
+    window.dispatchEvent(new Event("cartUpdated"));
+    return next;
+  };
+
+  const removeItem = (productId: number) => {
+    setItems((prev) =>
+      syncCart(prev.filter((item) => item.productId !== productId)),
+    );
+  };
+
+  const changeQuantity = (productId: number, delta: number) => {
+    setItems((prev) =>
+      syncCart(
+        prev.flatMap((item) => {
+          if (item.productId !== productId) return [item];
+          const quantity = item.quantity + delta;
+          return quantity <= 0 ? [] : [{ ...item, quantity }];
+        }),
+      ),
+    );
+  };
 
   const [step, setStep] = useState<"details" | "payment">("details");
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -344,10 +378,56 @@ export function Checkout() {
                         <p className="item-price">
                           {item.price.toLocaleString()} {t("common.currency")} {t("checkout.each")}
                         </p>
+                        <div className="item-qty-controls">
+                          <button
+                            type="button"
+                            aria-label={t("cart.decrease")}
+                            onClick={() => changeQuantity(item.productId, -1)}
+                          >
+                            <svg
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                            >
+                              <path d="M5 12h14" />
+                            </svg>
+                          </button>
+                          <span>{item.quantity}</span>
+                          <button
+                            type="button"
+                            aria-label={t("cart.increase")}
+                            onClick={() => changeQuantity(item.productId, 1)}
+                          >
+                            <svg
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                            >
+                              <path d="M12 5v14M5 12h14" />
+                            </svg>
+                          </button>
+                        </div>
                       </div>
                       <div className="item-total">
                         {(item.price * item.quantity).toLocaleString()} {t("common.currency")}
                       </div>
+                      <button
+                        type="button"
+                        className="item-remove"
+                        aria-label={t("cart.remove")}
+                        onClick={() => removeItem(item.productId)}
+                      >
+                        <svg
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <path d="M18 6L6 18M6 6l12 12" />
+                        </svg>
+                      </button>
                     </div>
                   ))}
                 </div>

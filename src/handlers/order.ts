@@ -166,10 +166,6 @@ export const completeOrder: Handler = async (req, res) => {
 
       console.log("Order marked as PAID and stock updated:", order.id);
 
-      const itemsList = order.items
-        .map((item) => `- ${item.product.name} x${item.quantity} `)
-        .join("\n");
-
       const ordersBySupplier = order.items.reduce(
         (acc, item) => {
           const supplier = item.product.supplier;
@@ -194,7 +190,7 @@ export const completeOrder: Handler = async (req, res) => {
         whatsappPromises.push(
           whatsapp
             .sendTemplate({
-              to: supplier.phoneNumber,
+              to: supplier.phoneNumber.replace(/\D/g, ""),
               templateName: supplier.templateName,
               languageCode: supplier.languageCode,
               components: [

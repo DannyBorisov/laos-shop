@@ -51,7 +51,10 @@
     "emptyMessage": "Add some products before checking out.",
     "continueShopping": "Continue Shopping",
     "total": "Total",
-    "checkout": "Checkout"
+    "checkout": "Checkout",
+    "remove": "Remove item",
+    "increase": "Increase quantity",
+    "decrease": "Decrease quantity"
   },
   "checkout": {
     "title": "Checkout",
