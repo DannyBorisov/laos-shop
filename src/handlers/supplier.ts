@@ -1,4 +1,4 @@
-import { Request, Response, Handler } from "express";
+import { Handler } from "express";
 import { prisma } from "../data";
 
 interface CreateSupplierRequest {
@@ -46,7 +46,7 @@ export const createSupplier: Handler = async (req, res) => {
       phoneNumber,
       country,
       templateName,
-      ...(languageCode ? { languageCode } : {}),
+      languageCode: languageCode ?? "",
     },
   });
 

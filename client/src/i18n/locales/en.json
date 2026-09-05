@@ -3,12 +3,6 @@
     "name": "Mhorkoung Beauty Center",
     "tagline": "Professional Aesthetic Solutions"
   },
-  "nav": {
-    "home": "Home",
-    "products": "Products",
-    "about": "About",
-    "contact": "Contact"
-  },
   "hero": {
     "title": "Premium Aesthetic Solutions",
     "subtitle": "Medical-grade beauty products trusted by professionals across Laos",
@@ -96,7 +90,6 @@
   },
   "footer": {
     "description": "Professional beauty products and treatments",
-    "quickLinks": "Quick Links",
     "legal": "Legal",
     "privacy": "Privacy Policy",
     "terms": "Terms of Service",
