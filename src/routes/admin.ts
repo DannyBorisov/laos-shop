@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { basicAuth } from "../middleware/basicAuth";
-import { getAllOrders } from "../handlers/order";
+import { getAllOrders, markOrderPaid } from "../handlers/order";
 import { prisma } from "../data";
 
 const router = Router();
@@ -10,6 +10,9 @@ router.use(basicAuth);
 
 // Get all orders
 router.get("/orders", getAllOrders);
+
+// Mark cash order as paid
+router.post("/orders/:id/mark-paid", markOrderPaid);
 
 // Get dashboard stats
 router.get("/stats", async (_req, res) => {

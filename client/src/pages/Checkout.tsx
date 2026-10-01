@@ -15,10 +15,12 @@ type CartItem = {
   imageUrl?: string | null;
 };
 
-type QRResponse = {
-  transactionId: string;
-  qrCode: string;
-  link: string;
+type OrderResponse = {
+  transactionId?: string;
+  qrCode?: string;
+  link?: string;
+  orderId: number;
+  paymentMethod: "QR" | "CASH";
 };
 
 export function Checkout() {
@@ -30,13 +32,26 @@ export function Checkout() {
     const newLang = i18n.language === "lo" ? "en" : "lo";
     i18n.changeLanguage(newLang);
   };
-  const initial =
-    (location.state as { items: CartItem[]; total: number }) || {
-      items: [],
-      total: 0,
-    };
 
-  const [items, setItems] = useState<CartItem[]>(initial.items ?? []);
+  // Get items from navigation state or localStorage
+  const getInitialItems = (): CartItem[] => {
+    const stateItems = (location.state as { items: CartItem[]; total: number })?.items;
+    if (stateItems && stateItems.length > 0) {
+      return stateItems;
+    }
+    // Fallback to localStorage
+    try {
+      const stored = localStorage.getItem("cart");
+      if (stored) {
+        return JSON.parse(stored);
+      }
+    } catch {
+      // ignore parse errors
+    }
+    return [];
+  };
+
+  const [items, setItems] = useState<CartItem[]>(getInitialItems);
 
   const total = items.reduce(
     (sum, item) => sum + item.price * item.quantity,
@@ -74,7 +89,8 @@ export function Checkout() {
   const [village, setVillage] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [qrData, setQrData] = useState<QRResponse | null>(null);
+  const [orderData, setOrderData] = useState<OrderResponse | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<"QR" | "CASH">("QR");
 
   const itemCount = items.reduce((sum, { quantity }) => sum + quantity, 0);
 
@@ -128,7 +144,7 @@ export function Checkout() {
 
     try {
       const fullAddress = `${village}, ${district}, ${city}`;
-      const response = await api.post<QRResponse>("/orders", {
+      const response = await api.post<OrderResponse>("/orders", {
         amount: total,
         items: items.map((item) => ({
           productId: item.productId,
@@ -137,9 +153,14 @@ export function Checkout() {
         })),
         address: fullAddress,
         phoneNumber,
+        paymentMethod,
       });
 
-      setQrData(response);
+      // Clear cart after successful order
+      localStorage.removeItem("cart");
+      window.dispatchEvent(new Event("cartUpdated"));
+
+      setOrderData(response);
       setStep("payment");
     } catch (err) {
       setError(t("checkout.orderError"));
@@ -301,6 +322,79 @@ export function Checkout() {
                   </div>
                 </section>
 
+                <section className="form-section">
+                  <div className="section-header">
+                    <div className="section-icon">
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <rect x="1" y="4" width="22" height="16" rx="2" />
+                        <path d="M1 10h22" />
+                      </svg>
+                    </div>
+                    <h2>{t("checkout.paymentMethod")}</h2>
+                  </div>
+                  <div className="payment-options">
+                    <label className={`payment-option ${paymentMethod === "QR" ? "selected" : ""}`}>
+                      <input
+                        type="radio"
+                        name="paymentMethod"
+                        value="QR"
+                        checked={paymentMethod === "QR"}
+                        onChange={() => setPaymentMethod("QR")}
+                      />
+                      <div className="payment-option-content">
+                        <svg
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <rect x="3" y="3" width="7" height="7" />
+                          <rect x="14" y="3" width="7" height="7" />
+                          <rect x="3" y="14" width="7" height="7" />
+                          <rect x="14" y="14" width="3" height="3" />
+                          <rect x="18" y="14" width="3" height="3" />
+                          <rect x="14" y="18" width="3" height="3" />
+                          <rect x="18" y="18" width="3" height="3" />
+                        </svg>
+                        <div className="payment-option-text">
+                          <span className="payment-option-title">{t("checkout.payQR")}</span>
+                          <span className="payment-option-desc">{t("checkout.payQRDesc")}</span>
+                        </div>
+                      </div>
+                    </label>
+                    <label className={`payment-option ${paymentMethod === "CASH" ? "selected" : ""}`}>
+                      <input
+                        type="radio"
+                        name="paymentMethod"
+                        value="CASH"
+                        checked={paymentMethod === "CASH"}
+                        onChange={() => setPaymentMethod("CASH")}
+                      />
+                      <div className="payment-option-content">
+                        <svg
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <rect x="2" y="6" width="20" height="12" rx="2" />
+                          <circle cx="12" cy="12" r="3" />
+                          <path d="M6 12h.01M18 12h.01" />
+                        </svg>
+                        <div className="payment-option-text">
+                          <span className="payment-option-title">{t("checkout.payCash")}</span>
+                          <span className="payment-option-desc">{t("checkout.payCashDesc")}</span>
+                        </div>
+                      </div>
+                    </label>
+                  </div>
+                </section>
+
                 {error && (
                   <div className="error-message">
                     <svg viewBox="0 0 24 24" fill="currentColor">
@@ -451,59 +545,111 @@ export function Checkout() {
           </>
         )}
 
-        {step === "payment" && qrData && (
+        {step === "payment" && orderData && (
           <div className="payment-container">
-            <div className="payment-card">
-              <div className="payment-icon">
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  <rect x="3" y="3" width="18" height="18" rx="2" />
-                  <path d="M7 7h.01M7 12h.01M7 17h.01M12 7h.01M12 12h.01M12 17h.01M17 7h.01M17 12h.01M17 17h.01" />
-                </svg>
-              </div>
-
-              <h1>{t("payment.scanToPay")}</h1>
-              <p className="payment-subtitle">
-                {t("payment.useApp")}
-              </p>
-
-              <div className="qr-wrapper">
-                <QRCodeSVG value={qrData.qrCode} size={200} level="M" />
-              </div>
-
-              <div className="payment-amount">
-                <span>{t("payment.amountDue")}</span>
-                <strong>{total.toLocaleString()} {t("common.currency")}</strong>
-              </div>
-
-              <div className="payment-info">
-                <div className="info-row">
-                  <span>{t("payment.transactionId")}</span>
-                  <code>{qrData.transactionId}</code>
+            {orderData.paymentMethod === "CASH" ? (
+              <div className="payment-card success-card">
+                <div className="success-icon">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                  >
+                    <path d="M20 6L9 17l-5-5" />
+                  </svg>
                 </div>
+
+                <h1>{t("payment.orderPlaced")}</h1>
+                <p className="payment-subtitle">
+                  {t("payment.cashInstructions")}
+                </p>
+
+                <div className="order-details-box">
+                  <div className="detail-row">
+                    <span>{t("payment.orderNumber")}</span>
+                    <strong>#{orderData.orderId}</strong>
+                  </div>
+                  <div className="detail-row">
+                    <span>{t("payment.amountDue")}</span>
+                    <strong>{total.toLocaleString()} {t("common.currency")}</strong>
+                  </div>
+                </div>
+
+                <div className="cash-note">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="M12 16v-4M12 8h.01" />
+                  </svg>
+                  <span>{t("payment.cashNote")}</span>
+                </div>
+
+                <button onClick={() => navigate("/")} className="btn-back-home primary">
+                  {t("payment.backToShop")}
+                </button>
               </div>
+            ) : (
+              <div className="payment-card">
+                <div className="payment-icon">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <rect x="3" y="3" width="18" height="18" rx="2" />
+                    <path d="M7 7h.01M7 12h.01M7 17h.01M12 7h.01M12 12h.01M12 17h.01M17 7h.01M17 12h.01M17 17h.01" />
+                  </svg>
+                </div>
 
-              <a href={qrData.link} className="btn-payment-link">
-                <img src={ldbLogo} alt="LDB Bank" className="ldb-logo" />
-                {t("payment.openInApp")}
-              </a>
+                <h1>{t("payment.scanToPay")}</h1>
+                <p className="payment-subtitle">
+                  {t("payment.useApp")}
+                </p>
 
-              <button onClick={() => navigate("/")} className="btn-back-home">
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  <path d="M19 12H5M12 19l-7-7 7-7" />
-                </svg>
-                {t("payment.backToShop")}
-              </button>
-            </div>
+                {orderData.qrCode && (
+                  <div className="qr-wrapper">
+                    <QRCodeSVG value={orderData.qrCode} size={200} level="M" />
+                  </div>
+                )}
+
+                <div className="payment-amount">
+                  <span>{t("payment.amountDue")}</span>
+                  <strong>{total.toLocaleString()} {t("common.currency")}</strong>
+                </div>
+
+                <div className="payment-info">
+                  <div className="info-row">
+                    <span>{t("payment.transactionId")}</span>
+                    <code>{orderData.transactionId}</code>
+                  </div>
+                </div>
+
+                {orderData.link && (
+                  <a href={orderData.link} className="btn-payment-link">
+                    <img src={ldbLogo} alt="LDB Bank" className="ldb-logo" />
+                    {t("payment.openInApp")}
+                  </a>
+                )}
+
+                <button onClick={() => navigate("/")} className="btn-back-home">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <path d="M19 12H5M12 19l-7-7 7-7" />
+                  </svg>
+                  {t("payment.backToShop")}
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>

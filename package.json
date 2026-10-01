@@ -15,7 +15,7 @@
     "db:push": "prisma db push",
     "db:seed": "tsx src/seed.ts",
     "migrate:media": "tsx src/migrate-media.ts",
-    "dev:docker": "docker-compose up --build"
+    "dev:docker": "docker-compose down && docker-compose up --build"
   },
   "keywords": [],
   "author": "",
@@ -28,6 +28,7 @@
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
+    "morgan": "^1.12.1",
     "multer": "^2.2.0",
     "pg": "^8.23.0",
     "typescript": "^7.0.2",
@@ -36,6 +37,7 @@
   "devDependencies": {
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
+    "@types/morgan": "^1.9.10",
     "@types/multer": "^2.2.0",
     "@types/pg": "^8.23.1",
     "concurrently": "^10.0.5",

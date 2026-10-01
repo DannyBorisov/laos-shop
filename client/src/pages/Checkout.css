@@ -822,6 +822,157 @@
   flex-shrink: 0;
 }
 
+/* Payment Method Selection */
+.payment-options {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.payment-option {
+  display: block;
+  cursor: pointer;
+}
+
+.payment-option input {
+  display: none;
+}
+
+.payment-option-content {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+  background: #fff;
+  border: 2px solid #EBE8E4;
+  transition: all 0.2s;
+}
+
+.payment-option:hover .payment-option-content {
+  border-color: #9C8B7A;
+  background: #FAF8F5;
+}
+
+.payment-option.selected .payment-option-content {
+  border-color: #9C8B7A;
+  background: #FAF8F5;
+}
+
+.payment-option-content svg {
+  width: 32px;
+  height: 32px;
+  color: #9C8B7A;
+  flex-shrink: 0;
+}
+
+.payment-option-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.payment-option-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: #3D3D3D;
+}
+
+.payment-option-desc {
+  font-size: 13px;
+  color: #6B6B6B;
+}
+
+/* Success Card (Cash Orders) */
+.success-card {
+  text-align: center;
+}
+
+.success-icon {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 24px;
+  background: #d4edda;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #28a745;
+}
+
+.success-icon svg {
+  width: 40px;
+  height: 40px;
+}
+
+.success-card h1 {
+  color: #28a745;
+  margin-bottom: 12px;
+}
+
+.order-details-box {
+  background: #F7F5F3;
+  border: 1px solid #EBE8E4;
+  padding: 20px;
+  margin-bottom: 24px;
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid #EBE8E4;
+}
+
+.detail-row:last-child {
+  border-bottom: none;
+}
+
+.detail-row span {
+  font-size: 13px;
+  color: #6B6B6B;
+}
+
+.detail-row strong {
+  font-size: 16px;
+  color: #3D3D3D;
+}
+
+.cash-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  background: #fff3cd;
+  border: 1px solid #ffc107;
+  margin-bottom: 24px;
+  text-align: left;
+}
+
+.cash-note svg {
+  width: 20px;
+  height: 20px;
+  color: #856404;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.cash-note span {
+  font-size: 13px;
+  color: #856404;
+  line-height: 1.5;
+}
+
+.btn-back-home.primary {
+  background: #9C8B7A;
+  color: #fff;
+  border: none;
+}
+
+.btn-back-home.primary:hover {
+  background: #7D6E5F;
+}
+
 /* Responsive */
 @media (max-width: 920px) {
   .checkout-container {

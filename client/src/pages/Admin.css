@@ -339,6 +339,50 @@
   color: #721c24;
 }
 
+.payment-qr {
+  background: #e3f2fd;
+  color: #1565c0;
+}
+
+.payment-cash {
+  background: #fff3e0;
+  color: #e65100;
+}
+
+.order-actions-cell {
+  width: 120px;
+}
+
+.btn-mark-paid {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: #4caf50;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  transition: background 0.2s;
+  white-space: nowrap;
+}
+
+.btn-mark-paid:hover {
+  background: #43a047;
+}
+
+.btn-mark-paid:disabled {
+  background: #999;
+  cursor: not-allowed;
+}
+
+.btn-mark-paid svg {
+  width: 14px;
+  height: 14px;
+}
+
 .order-details-row td {
   background: #fafafa;
   padding: 0 !important;

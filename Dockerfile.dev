@@ -7,11 +7,11 @@ WORKDIR /app
 # so prisma/schema.prisma is needed at install time.
 COPY package*.json ./
 COPY prisma ./prisma
-RUN npm ci
+RUN npm i
 
 # Install client deps into a nested node_modules.
 COPY client/package*.json ./client/
-RUN cd client && npm ci
+RUN cd client && npm i
 
 # Source is bind-mounted at runtime by docker-compose; nothing else to copy here.
 EXPOSE 3010 5173

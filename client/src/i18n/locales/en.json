@@ -72,6 +72,11 @@
     "continueToPayment": "Continue to Payment",
     "processing": "Processing...",
     "orderError": "Failed to process order. Please try again.",
+    "paymentMethod": "Payment Method",
+    "payQR": "QR Code Payment",
+    "payQRDesc": "Pay online via LDB Bank app",
+    "payCash": "Cash on Delivery",
+    "payCashDesc": "Pay when you receive your order",
     "orderSummary": "Order Summary",
     "items": "items",
     "item": "item",
@@ -86,7 +91,11 @@
     "amountDue": "Amount Due",
     "transactionId": "Transaction ID",
     "openInApp": "Open in LDB Bank App",
-    "backToShop": "Back to Shop"
+    "backToShop": "Back to Shop",
+    "orderPlaced": "Order Placed",
+    "cashInstructions": "Your order has been placed successfully. Please prepare cash for delivery.",
+    "orderNumber": "Order Number",
+    "cashNote": "Please have exact change ready. Our delivery partner will collect payment upon delivery."
   },
   "footer": {
     "description": "Professional beauty products and treatments",

@@ -1,7 +1,7 @@
 import { Handler } from "express";
 import phajay, { PhajayPaymentStatus } from "../services/payjay";
 import { prisma } from "../data";
-import { Order, OrderStatus, Supplier } from "@prisma/client";
+import { Order, OrderStatus, PaymentMethod, Supplier } from "@prisma/client";
 import whatsapp from "../services/whatsapp";
 
 interface OrderItem {
@@ -10,11 +10,12 @@ interface OrderItem {
   price: number;
 }
 
-interface GenerateQRRequest {
+interface CreateOrderRequest {
   amount: number;
   items: OrderItem[];
   phoneNumber: string;
   address: string;
+  paymentMethod?: PaymentMethod;
 }
 
 interface PhajayCallback {
@@ -61,8 +62,22 @@ export const getAllOrders: Handler = async (_req, res) => {
 };
 
 export const createOrder: Handler = async (req, res) => {
-  const { amount, items, phoneNumber, address } = req.body as GenerateQRRequest;
+  const {
+    amount,
+    items,
+    phoneNumber,
+    address,
+    paymentMethod = PaymentMethod.QR,
+  } = req.body as CreateOrderRequest;
   let order: Order | null = null;
+
+  console.log("Creating order:", {
+    amount,
+    phoneNumber,
+    address,
+    paymentMethod,
+    itemCount: items?.length,
+  });
 
   try {
     order = await prisma.order.create({
@@ -70,6 +85,7 @@ export const createOrder: Handler = async (req, res) => {
         totalPrice: amount,
         phoneNumber,
         address,
+        paymentMethod,
         items: {
           create: items.map((item) => ({
             productId: item.productId,
@@ -81,6 +97,15 @@ export const createOrder: Handler = async (req, res) => {
       include: { items: true },
     });
 
+    // For cash payments, no QR code is needed
+    if (paymentMethod === PaymentMethod.CASH) {
+      return res.json({
+        orderId: order.id,
+        paymentMethod: "CASH",
+      });
+    }
+
+    // For QR payments, generate the QR code
     const qrResponse = await phajay.generateLBDQr({
       amount,
       description: `Order #${order.id}`,
@@ -105,9 +130,10 @@ export const createOrder: Handler = async (req, res) => {
       qrCode: qrResponse.qrCode,
       link: qrResponse.link,
       orderId: order.id,
+      paymentMethod: "QR",
     });
   } catch (error) {
-    console.error("Failed to generate QR code:", error);
+    console.error("Failed to process order:", error);
 
     if (order) {
       prisma.order.update({
@@ -260,5 +286,104 @@ export const cancelOrder: Handler = async (req, res) => {
   } catch (error) {
     console.error("Failed to cancel order:", error);
     res.status(500).json({ error: "Failed to cancel order" });
+  }
+};
+
+export const markOrderPaid: Handler = async (req, res) => {
+  const orderId = parseInt(req.params.id as string);
+
+  try {
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      include: {
+        items: { include: { product: { include: { supplier: true } } } },
+      },
+    });
+
+    if (!order) {
+      return res.status(404).json({ error: "Order not found" });
+    }
+
+    if (order.status !== "PENDING") {
+      return res.status(400).json({ error: "Order is not pending" });
+    }
+
+    if (order.paymentMethod !== "CASH") {
+      return res
+        .status(400)
+        .json({ error: "Only cash orders can be manually marked as paid" });
+    }
+
+    // Update order status and decrement stock in a transaction
+    await prisma.$transaction([
+      prisma.order.update({
+        where: { id: order.id },
+        data: { status: OrderStatus.PAID },
+      }),
+      ...order.items.map((item) =>
+        prisma.product.update({
+          where: { id: item.productId },
+          data: { quantity: { decrement: item.quantity } },
+        }),
+      ),
+    ]);
+
+    console.log("Cash order marked as PAID and stock updated:", order.id);
+
+    // Send WhatsApp notifications to suppliers (same logic as completeOrder)
+    const ordersBySupplier = order.items.reduce(
+      (acc, item) => {
+        const supplier = item.product.supplier;
+        if (!acc[supplier.id]) {
+          acc[supplier.id] = { supplier, items: [] };
+        }
+        acc[supplier.id].items.push(item);
+        return acc;
+      },
+      {} as Record<
+        number,
+        { supplier: Supplier; items: (typeof order.items)[number][] }
+      >,
+    );
+
+    const whatsappPromises = [];
+    for (const { supplier, items } of Object.values(ordersBySupplier)) {
+      const supplierItemsList = items
+        .map((item) => `- ${item.product.name} x${item.quantity}`)
+        .join("\n");
+
+      whatsappPromises.push(
+        whatsapp
+          .sendTemplate({
+            to: supplier.phoneNumber.replace(/\D/g, ""),
+            templateName: supplier.templateName,
+            languageCode: supplier.languageCode,
+            components: [
+              {
+                type: "body",
+                parameters: [
+                  { type: "text", text: `${order.id}` },
+                  { type: "text", text: `${order.phoneNumber}` },
+                  { type: "text", text: `${order.address}` },
+                  { type: "text", text: `${supplierItemsList}` },
+                ],
+              },
+            ],
+          })
+          .catch((error) => {
+            console.error(
+              `Failed to notify supplier ${supplier.id} (${supplier.name}) for order ${order.id}:`,
+              error,
+            );
+          }),
+      );
+    }
+
+    await Promise.all(whatsappPromises);
+
+    res.json({ success: true, message: "Order marked as paid" });
+  } catch (error) {
+    console.error("Failed to mark order as paid:", error);
+    res.status(500).json({ error: "Failed to mark order as paid" });
   }
 };

@@ -10,6 +10,10 @@ import supplierRoutes from "./supplier";
 
 const router = Router();
 
+router.get("/health", (_req, res) => {
+  res.json({ status: "ok" });
+});
+
 router
   .use("/products", productRoutes)
   .use("/orders", orderRoutes)

@@ -21,6 +21,7 @@ type Order = {
   phoneNumber: string;
   address: string;
   status: "PENDING" | "PAID" | "FAILED";
+  paymentMethod: "QR" | "CASH" | null;
   createdAt: string;
   updatedAt: string;
   items: OrderItem[];
@@ -97,6 +98,7 @@ export function Admin() {
   const [supplierEditValues, setSupplierEditValues] = useState<
     Partial<Supplier>
   >({});
+  const [markingPaid, setMarkingPaid] = useState<number | null>(null);
 
   useEffect(() => {
     if (activeTab === "orders") {
@@ -393,6 +395,22 @@ export function Admin() {
     }
   };
 
+  const markOrderAsPaid = async (orderId: number) => {
+    if (!confirm(`Mark order #${orderId} as paid?`)) return;
+    setMarkingPaid(orderId);
+    try {
+      await api.post(`/admin/orders/${orderId}/mark-paid`, {});
+      setOrders((prev) =>
+        prev.map((o) => (o.id === orderId ? { ...o, status: "PAID" as const } : o)),
+      );
+    } catch (error) {
+      console.error("Failed to mark order as paid:", error);
+      alert("Failed to mark order as paid");
+    } finally {
+      setMarkingPaid(null);
+    }
+  };
+
   const applyBulkEdit = async () => {
     if (selectedProducts.size === 0 || !bulkAction) return;
 
@@ -542,7 +560,9 @@ export function Admin() {
                       <th>Customer</th>
                       <th>Items</th>
                       <th>Total</th>
+                      <th>Payment</th>
                       <th>Status</th>
+                      <th>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -584,15 +604,51 @@ export function Admin() {
                           </td>
                           <td>
                             <span
+                              className={`status-badge ${order.paymentMethod === "CASH" ? "payment-cash" : "payment-qr"}`}
+                            >
+                              {order.paymentMethod || "QR"}
+                            </span>
+                          </td>
+                          <td>
+                            <span
                               className={`status-badge ${getStatusClass(order.status)}`}
                             >
                               {order.status}
                             </span>
                           </td>
+                          <td className="order-actions-cell">
+                            {order.status === "PENDING" &&
+                              order.paymentMethod === "CASH" && (
+                                <button
+                                  className="btn-mark-paid"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    markOrderAsPaid(order.id);
+                                  }}
+                                  disabled={markingPaid === order.id}
+                                >
+                                  {markingPaid === order.id ? (
+                                    "..."
+                                  ) : (
+                                    <>
+                                      <svg
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        strokeWidth="2"
+                                      >
+                                        <path d="M20 6L9 17l-5-5" />
+                                      </svg>
+                                      Mark Paid
+                                    </>
+                                  )}
+                                </button>
+                              )}
+                          </td>
                         </tr>
                         {expandedOrder === order.id && (
                           <tr className="order-details-row">
-                            <td colSpan={7}>
+                            <td colSpan={9}>
                               <div className="order-details">
                                 <h4>Order Items</h4>
                                 <div className="items-list">
