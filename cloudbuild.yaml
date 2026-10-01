@@ -13,18 +13,16 @@ steps:
       - 'push'
       - 'asia-southeast1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/laos-shop:$COMMIT_SHA'
 
-  # Deploy to Cloud Run
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+  # Deploy to Cloud Run (update preserves existing env vars/secrets)
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
     entrypoint: gcloud
     args:
       - 'run'
-      - 'deploy'
+      - 'services'
+      - 'update'
       - 'laos-shop'
       - '--image=asia-southeast1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/laos-shop:$COMMIT_SHA'
       - '--region=asia-southeast1'
-      - '--platform=managed'
-      - '--allow-unauthenticated'
-      - '--port=8080'
 
 images:
   - 'asia-southeast1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/laos-shop:$COMMIT_SHA'
