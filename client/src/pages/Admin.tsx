@@ -38,6 +38,13 @@ type Supplier = {
   updatedAt: string;
 };
 
+type Category = {
+  id: number;
+  name: string;
+  nameLao: string | null;
+  imageUrl: string | null;
+};
+
 type Product = {
   id: number;
   name: string;
@@ -50,10 +57,12 @@ type Product = {
   quantity: number;
   supplierId: number | null;
   supplier: Supplier | null;
+  categoryId: number | null;
+  category: Category | null;
   updatedAt: string;
 };
 
-type Tab = "orders" | "products" | "suppliers";
+type Tab = "orders" | "products" | "suppliers" | "categories";
 type DateRange = "all" | "today" | "week" | "month" | "year";
 type StatusFilter = "all" | "PENDING" | "PAID" | "FAILED";
 type PaymentFilter = "all" | "QR" | "CASH";
@@ -63,6 +72,7 @@ export function Admin() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedOrder, setExpandedOrder] = useState<number | null>(null);
 
@@ -107,6 +117,12 @@ export function Admin() {
     Partial<Supplier>
   >({});
   const [markingPaid, setMarkingPaid] = useState<number | null>(null);
+  const [showAddCategory, setShowAddCategory] = useState(false);
+  const [newCategory, setNewCategory] = useState({
+    name: "",
+    nameLao: "",
+  });
+  const [expandedCategory, setExpandedCategory] = useState<number | null>(null);
 
   useEffect(() => {
     if (activeTab === "orders") {
@@ -120,10 +136,12 @@ export function Admin() {
       Promise.all([
         api.get<{ products: Product[] }>("/products?limit=1000"),
         api.get<Supplier[]>("/suppliers"),
+        api.get<Category[]>("/categories"),
       ])
-        .then(([data, sup]) => {
+        .then(([data, sup, cats]) => {
           setProducts(data.products);
           setSuppliers(sup);
+          setCategories(cats);
         })
         .finally(() => setLoading(false));
     } else if (activeTab === "suppliers") {
@@ -131,6 +149,17 @@ export function Admin() {
       api
         .get<Supplier[]>("/suppliers")
         .then(setSuppliers)
+        .finally(() => setLoading(false));
+    } else if (activeTab === "categories") {
+      setLoading(true);
+      Promise.all([
+        api.get<Category[]>("/categories"),
+        api.get<{ products: Product[] }>("/products?limit=1000"),
+      ])
+        .then(([cats, data]) => {
+          setCategories(cats);
+          setProducts(data.products);
+        })
         .finally(() => setLoading(false));
     }
   }, [activeTab]);
@@ -212,6 +241,7 @@ export function Admin() {
       description: product.description || "",
       videoPath: product.videoPath || "",
       supplierId: product.supplierId,
+      categoryId: product.categoryId,
     });
   };
 
@@ -347,6 +377,25 @@ export function Admin() {
     } catch (error) {
       console.error("Failed to create supplier:", error);
       alert("Failed to create supplier");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const createCategory = async () => {
+    if (!newCategory.name.trim()) {
+      alert("Name is required");
+      return;
+    }
+    setSaving(true);
+    try {
+      const created = await api.post<Category>("/categories", newCategory);
+      setCategories((prev) => [...prev, created]);
+      setShowAddCategory(false);
+      setNewCategory({ name: "", nameLao: "" });
+    } catch (error) {
+      console.error("Failed to create category:", error);
+      alert("Failed to create category");
     } finally {
       setSaving(false);
     }
@@ -579,6 +628,23 @@ export function Admin() {
           </svg>
           Suppliers
         </button>
+        <button
+          className={`tab ${activeTab === "categories" ? "active" : ""}`}
+          onClick={() => {
+            setActiveTab("categories");
+            clearSelection();
+          }}
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z" />
+          </svg>
+          Categories
+        </button>
       </div>
 
       <main className="admin-main">
@@ -589,6 +655,13 @@ export function Admin() {
               <span className="order-count">
                 {filteredOrders.length}
                 {hasActiveFilters ? ` of ${orders.length}` : ""} total
+              </span>
+              <span className="orders-paid-total">
+                {filteredOrders
+                  .filter((o) => o.status === "PAID")
+                  .reduce((sum, o) => sum + o.totalPrice, 0)
+                  .toLocaleString()}{" "}
+                KIP paid
               </span>
             </div>
 
@@ -844,24 +917,6 @@ export function Admin() {
                       </>
                     ))}
                   </tbody>
-                  <tfoot>
-                    <tr className="orders-total-row">
-                      <td colSpan={9}>
-                        <div className="orders-total-footer">
-                          <span className="orders-total-label">
-                            Total (Paid{hasActiveFilters ? " - Filtered" : ""})
-                          </span>
-                          <span className="orders-total-value">
-                            {filteredOrders
-                              .filter((o) => o.status === "PAID")
-                              .reduce((sum, o) => sum + o.totalPrice, 0)
-                              .toLocaleString()}{" "}
-                            KIP
-                          </span>
-                        </div>
-                      </td>
-                    </tr>
-                  </tfoot>
                 </table>
               </div>
             )}
@@ -1114,6 +1169,7 @@ export function Admin() {
                       <th>Name</th>
                       <th>Description</th>
                       <th>Supplier</th>
+                      <th>Category</th>
                       <th>Price (KIP)</th>
                       <th>Stock</th>
                       <th>Updated</th>
@@ -1342,6 +1398,48 @@ export function Admin() {
                           ) : (
                             product.supplier?.name || "-"
                           )}
+                        </td>
+                        <td className="product-category-cell">
+                          <select
+                            value={
+                              editingProduct === product.id
+                                ? (editValues.categoryId ?? "")
+                                : (product.categoryId ?? "")
+                            }
+                            onChange={async (e) => {
+                              const newCategoryId = e.target.value
+                                ? Number(e.target.value)
+                                : null;
+                              if (editingProduct === product.id) {
+                                setEditValues((prev) => ({
+                                  ...prev,
+                                  categoryId: newCategoryId,
+                                }));
+                              } else {
+                                try {
+                                  const updated = await api.put<Product>(
+                                    `/products/${product.id}`,
+                                    { categoryId: newCategoryId },
+                                  );
+                                  setProducts((prev) =>
+                                    prev.map((p) =>
+                                      p.id === product.id ? { ...p, ...updated } : p,
+                                    ),
+                                  );
+                                } catch (error) {
+                                  console.error("Failed to update category:", error);
+                                }
+                              }
+                            }}
+                            className="inline-select"
+                          >
+                            <option value="">-</option>
+                            {categories.map((c) => (
+                              <option key={c.id} value={c.id}>
+                                {c.name}
+                              </option>
+                            ))}
+                          </select>
                         </td>
                         <td className="product-price-cell">
                           {editingProduct === product.id ? (
@@ -1716,6 +1814,175 @@ export function Admin() {
                         </td>
                       </tr>
                     ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </>
+        )}
+
+        {activeTab === "categories" && (
+          <>
+            <div className="admin-title">
+              <h1>Categories</h1>
+              <span className="order-count">{categories.length} total</span>
+              <button
+                className="btn-add-product"
+                onClick={() => setShowAddCategory(true)}
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <path d="M12 5v14M5 12h14" />
+                </svg>
+                Add Category
+              </button>
+            </div>
+
+            {showAddCategory && (
+              <div className="add-product-form">
+                <h3>Add New Category</h3>
+                <div className="form-grid">
+                  <div className="form-group">
+                    <label>Name (English) *</label>
+                    <input
+                      type="text"
+                      value={newCategory.name}
+                      onChange={(e) =>
+                        setNewCategory((c) => ({ ...c, name: e.target.value }))
+                      }
+                      placeholder="Category name"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Name (Lao)</label>
+                    <input
+                      type="text"
+                      value={newCategory.nameLao}
+                      onChange={(e) =>
+                        setNewCategory((c) => ({ ...c, nameLao: e.target.value }))
+                      }
+                      placeholder="ຊື່ໝວດໝູ່"
+                    />
+                  </div>
+                </div>
+                <div className="form-actions">
+                  <button
+                    className="btn-save"
+                    onClick={createCategory}
+                    disabled={saving}
+                  >
+                    {saving ? "Creating..." : "Create Category"}
+                  </button>
+                  <button
+                    className="btn-cancel"
+                    onClick={() => setShowAddCategory(false)}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {loading ? (
+              <div className="loading">Loading categories...</div>
+            ) : categories.length === 0 ? (
+              <div className="empty-state">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z" />
+                </svg>
+                <p>No categories yet</p>
+              </div>
+            ) : (
+              <div className="orders-table-wrapper">
+                <table className="orders-table categories-table">
+                  <thead>
+                    <tr>
+                      <th style={{ width: 40 }}></th>
+                      <th>Name</th>
+                      <th>Name (Lao)</th>
+                      <th>Products</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {categories.map((category) => {
+                      const categoryProducts = products.filter(
+                        (p) => p.categoryId === category.id,
+                      );
+                      const isExpanded = expandedCategory === category.id;
+                      return (
+                        <>
+                          <tr key={category.id} className="category-row">
+                            <td className="category-chevron-cell">
+                              {categoryProducts.length > 0 && (
+                                <button
+                                  className={`category-chevron ${isExpanded ? "expanded" : ""}`}
+                                  onClick={() =>
+                                    setExpandedCategory(isExpanded ? null : category.id)
+                                  }
+                                >
+                                  <svg
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                  >
+                                    <path d="M9 18l6-6-6-6" />
+                                  </svg>
+                                </button>
+                              )}
+                            </td>
+                            <td className="category-name-cell">{category.name}</td>
+                            <td className="category-name-lao-cell">
+                              {category.nameLao || "-"}
+                            </td>
+                            <td className="category-count-cell">
+                              {categoryProducts.length}
+                            </td>
+                          </tr>
+                          {isExpanded && categoryProducts.length > 0 && (
+                            <tr className="category-products-row">
+                              <td colSpan={4}>
+                                <table className="category-products-table">
+                                  <tbody>
+                                    {categoryProducts.map((product) => (
+                                      <tr key={product.id}>
+                                        <td className="cp-image-cell">
+                                          {product.imageUrl ? (
+                                            <img
+                                              src={product.imageUrl}
+                                              alt={product.name}
+                                              referrerPolicy="no-referrer"
+                                            />
+                                          ) : (
+                                            <div className="cp-no-image">-</div>
+                                          )}
+                                        </td>
+                                        <td className="cp-name-cell">{product.name}</td>
+                                        <td className="cp-price-cell">
+                                          {product.price.toLocaleString()} KIP
+                                        </td>
+                                        <td className="cp-stock-cell">
+                                          {product.quantity} in stock
+                                        </td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </td>
+                            </tr>
+                          )}
+                        </>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>

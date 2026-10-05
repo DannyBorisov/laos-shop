@@ -46,7 +46,7 @@ export const getProducts = async (req: Request, res: Response) => {
       skip,
       take: +limit,
       orderBy: { id: "asc" },
-      include: { supplier: true },
+      include: { supplier: true, category: true },
     }),
     prisma.product.count({ where }),
   ]);
@@ -68,7 +68,7 @@ export const getProduct = async (req: Request, res: Response) => {
   const id = req.params.id as string;
   const dbProduct = await prisma.product.findUnique({
     where: { id: +id },
-    include: { supplier: true },
+    include: { supplier: true, category: true },
   });
   if (!dbProduct) {
     res.status(404).json({ error: "Product not found" });
@@ -87,6 +87,7 @@ export const createProduct = async (req: Request, res: Response) => {
     videoPath,
     quantity,
     supplierId,
+    categoryId,
   } = req.body;
 
   const supplier = await prisma.supplier.findUnique({
@@ -116,8 +117,9 @@ export const createProduct = async (req: Request, res: Response) => {
       videoPath: videoPath ?? null,
       quantity: quantity ?? 0,
       supplierId,
+      categoryId: categoryId ?? null,
     },
-    include: { supplier: true },
+    include: { supplier: true, category: true },
   });
   const product = await addMediaUrls(dbProduct);
   res.status(201).json(product);
@@ -133,6 +135,7 @@ export const updateProduct = async (req: Request, res: Response) => {
     videoPath,
     quantity,
     supplierId,
+    categoryId,
   } = req.body;
   if (supplierId === null) {
     res.status(400).json({ error: "supplierId cannot be null" });
@@ -148,8 +151,9 @@ export const updateProduct = async (req: Request, res: Response) => {
       videoPath,
       quantity,
       ...(supplierId !== undefined && { supplierId }),
+      ...(categoryId !== undefined && { categoryId }),
     },
-    include: { supplier: true },
+    include: { supplier: true, category: true },
   });
   const product = await addMediaUrls(dbProduct);
   res.json(product);
