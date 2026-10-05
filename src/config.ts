@@ -10,7 +10,7 @@ export enum NodeEnv {
 
 const EnvSchema = z.object({
   NODE_ENV: z.enum([NodeEnv.Development, NodeEnv.Production]),
-  PORT: z.coerce.number().default(8080),
+  PORT: z.coerce.number(),
   DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),
   PHAJAY_SECRET: z.string(),
   WHATSAPP_API_KEY: z.string(),

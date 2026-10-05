@@ -54,6 +54,9 @@ type Product = {
 };
 
 type Tab = "orders" | "products" | "suppliers";
+type DateRange = "all" | "today" | "week" | "month" | "year";
+type StatusFilter = "all" | "PENDING" | "PAID" | "FAILED";
+type PaymentFilter = "all" | "QR" | "CASH";
 
 export function Admin() {
   const [activeTab, setActiveTab] = useState<Tab>("orders");
@@ -62,6 +65,11 @@ export function Admin() {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedOrder, setExpandedOrder] = useState<number | null>(null);
+
+  // Order filters
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [paymentFilter, setPaymentFilter] = useState<PaymentFilter>("all");
+  const [dateRange, setDateRange] = useState<DateRange>("all");
   const [editingProduct, setEditingProduct] = useState<number | null>(null);
   const [editValues, setEditValues] = useState<Partial<Product>>({});
   const [saving, setSaving] = useState(false);
@@ -147,6 +155,53 @@ export function Admin() {
       minute: "2-digit",
     });
   };
+
+  const getDateRangeStart = (range: DateRange): Date | null => {
+    if (range === "all") return null;
+    const now = new Date();
+    switch (range) {
+      case "today":
+        return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      case "week": {
+        const dayOfWeek = now.getDay();
+        const diff = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Start from Monday
+        const monday = new Date(now);
+        monday.setDate(now.getDate() - diff);
+        monday.setHours(0, 0, 0, 0);
+        return monday;
+      }
+      case "month":
+        return new Date(now.getFullYear(), now.getMonth(), 1);
+      case "year":
+        return new Date(now.getFullYear(), 0, 1);
+      default:
+        return null;
+    }
+  };
+
+  const filteredOrders = orders.filter((order) => {
+    // Status filter
+    if (statusFilter !== "all" && order.status !== statusFilter) return false;
+    // Payment filter
+    if (paymentFilter !== "all" && order.paymentMethod !== paymentFilter)
+      return false;
+    // Date range filter
+    const rangeStart = getDateRangeStart(dateRange);
+    if (rangeStart) {
+      const orderDate = new Date(order.createdAt);
+      if (orderDate < rangeStart) return false;
+    }
+    return true;
+  });
+
+  const clearFilters = () => {
+    setStatusFilter("all");
+    setPaymentFilter("all");
+    setDateRange("all");
+  };
+
+  const hasActiveFilters =
+    statusFilter !== "all" || paymentFilter !== "all" || dateRange !== "all";
 
   const startEditing = (product: Product) => {
     setEditingProduct(product.id);
@@ -531,7 +586,70 @@ export function Admin() {
           <>
             <div className="admin-title">
               <h1>Orders</h1>
-              <span className="order-count">{orders.length} total</span>
+              <span className="order-count">
+                {filteredOrders.length}
+                {hasActiveFilters ? ` of ${orders.length}` : ""} total
+              </span>
+            </div>
+
+            {/* Date Range Tabs */}
+            <div className="order-filters">
+              <div className="filter-date-tabs">
+                {(
+                  [
+                    { value: "all", label: "All Time" },
+                    { value: "today", label: "Today" },
+                    { value: "week", label: "This Week" },
+                    { value: "month", label: "This Month" },
+                    { value: "year", label: "This Year" },
+                  ] as const
+                ).map((tab) => (
+                  <button
+                    key={tab.value}
+                    className={`filter-date-tab ${dateRange === tab.value ? "active" : ""}`}
+                    onClick={() => setDateRange(tab.value)}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+
+              <div className="filter-dropdowns">
+                <div className="filter-group">
+                  <label>Status</label>
+                  <select
+                    value={statusFilter}
+                    onChange={(e) =>
+                      setStatusFilter(e.target.value as StatusFilter)
+                    }
+                  >
+                    <option value="all">All Status</option>
+                    <option value="PENDING">Pending</option>
+                    <option value="PAID">Paid</option>
+                    <option value="FAILED">Failed</option>
+                  </select>
+                </div>
+
+                <div className="filter-group">
+                  <label>Payment</label>
+                  <select
+                    value={paymentFilter}
+                    onChange={(e) =>
+                      setPaymentFilter(e.target.value as PaymentFilter)
+                    }
+                  >
+                    <option value="all">All Payment</option>
+                    <option value="QR">QR</option>
+                    <option value="CASH">Cash</option>
+                  </select>
+                </div>
+
+                {hasActiveFilters && (
+                  <button className="btn-clear-filters" onClick={clearFilters}>
+                    Clear Filters
+                  </button>
+                )}
+              </div>
             </div>
 
             {loading ? (
@@ -548,6 +666,22 @@ export function Admin() {
                   <path d="M8 21h8M12 17v4" />
                 </svg>
                 <p>No orders yet</p>
+              </div>
+            ) : filteredOrders.length === 0 ? (
+              <div className="empty-state">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <circle cx="11" cy="11" r="8" />
+                  <path d="M21 21l-4.35-4.35" />
+                </svg>
+                <p>No orders match your filters</p>
+                <button className="btn-clear-filters" onClick={clearFilters}>
+                  Clear Filters
+                </button>
               </div>
             ) : (
               <div className="orders-table-wrapper">
@@ -566,7 +700,7 @@ export function Admin() {
                     </tr>
                   </thead>
                   <tbody>
-                    {orders.map((order) => (
+                    {filteredOrders.map((order) => (
                       <>
                         <tr
                           key={order.id}
@@ -710,6 +844,24 @@ export function Admin() {
                       </>
                     ))}
                   </tbody>
+                  <tfoot>
+                    <tr className="orders-total-row">
+                      <td colSpan={9}>
+                        <div className="orders-total-footer">
+                          <span className="orders-total-label">
+                            Total (Paid{hasActiveFilters ? " - Filtered" : ""})
+                          </span>
+                          <span className="orders-total-value">
+                            {filteredOrders
+                              .filter((o) => o.status === "PAID")
+                              .reduce((sum, o) => sum + o.totalPrice, 0)
+                              .toLocaleString()}{" "}
+                            KIP
+                          </span>
+                        </div>
+                      </td>
+                    </tr>
+                  </tfoot>
                 </table>
               </div>
             )}

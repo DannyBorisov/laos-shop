@@ -47,24 +47,24 @@ type WebhookMessage = {
 };
 
 class WhatsApp {
-  private baseUrl = "https://graph.facebook.com/v18.0";
-  private apiKey: string;
-  private phoneId: string;
+  #baseUrl = "https://graph.facebook.com/v18.0";
+  #apiKey: string;
+  #phoneId: string;
 
   constructor(apiKey: string, phoneId: string) {
-    this.apiKey = apiKey;
-    this.phoneId = phoneId;
+    this.#apiKey = apiKey;
+    this.#phoneId = phoneId;
   }
 
   private async request<T>(
     endpoint: string,
     options: RequestInit = {},
   ): Promise<T> {
-    const response = await fetch(`${this.baseUrl}${endpoint}`, {
+    const response = await fetch(`${this.#baseUrl}${endpoint}`, {
       ...options,
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${this.apiKey}`,
+        Authorization: `Bearer ${this.#apiKey}`,
         ...options.headers,
       },
     }).catch((error) => {
@@ -81,7 +81,7 @@ class WhatsApp {
   }
 
   async sendText(params: TextMessage): Promise<MessageResponse> {
-    return this.request<MessageResponse>(`/${this.phoneId}/messages`, {
+    return this.request<MessageResponse>(`/${this.#phoneId}/messages`, {
       method: "POST",
       body: JSON.stringify({
         messaging_product: "whatsapp",
@@ -93,8 +93,8 @@ class WhatsApp {
     });
   }
 
-  async sendTemplate(params: TemplateMessage): Promise<MessageResponse> {
-    return this.request<MessageResponse>(`/${this.phoneId}/messages`, {
+  async sendTemplate(params: TemplateMessage) {
+    return this.request<MessageResponse>(`/${this.#phoneId}/messages`, {
       method: "POST",
       body: JSON.stringify({
         messaging_product: "whatsapp",
@@ -121,7 +121,7 @@ class WhatsApp {
       mediaObject.filename = params.filename;
     }
 
-    return this.request<MessageResponse>(`/${this.phoneId}/messages`, {
+    return this.request<MessageResponse>(`/${this.#phoneId}/messages`, {
       method: "POST",
       body: JSON.stringify({
         messaging_product: "whatsapp",
@@ -134,7 +134,7 @@ class WhatsApp {
   }
 
   async markAsRead(messageId: string): Promise<{ success: boolean }> {
-    return this.request<{ success: boolean }>(`/${this.phoneId}/messages`, {
+    return this.request<{ success: boolean }>(`/${this.#phoneId}/messages`, {
       method: "POST",
       body: JSON.stringify({
         messaging_product: "whatsapp",
